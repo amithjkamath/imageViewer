@@ -213,3 +213,6 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+Makefile
+Makefile.Debug
+Makefile.Release
