@@ -12,10 +12,12 @@ TARGET = imageViewer
 TEMPLATE = app
 
 SOURCES += main.cpp \
-    imageviewer.cpp
+    imageviewer.cpp \
+    imagealgorithms.cpp
 
 HEADERS  += \
-    imageviewer.h
+    imageviewer.h \
+    imagealgorithms.h
 
 RESOURCES += \
     imageviewer.qrc

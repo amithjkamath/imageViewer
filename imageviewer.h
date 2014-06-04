@@ -78,6 +78,7 @@
      void invertImage();
      void greyscale();
      void sepia();
+     void edgeDetect();
 
      void rotateClock();
      void rotateCounterClock();
@@ -113,18 +114,13 @@
      void adjustScrollBar(QScrollBar *scrollBar, double factor);
      void scaleImage(double factor);
 
-     // Helpers for enhancing.
-     void changeBrightness(QImage &thisImage, int delta);
-     void changeSaturation(QImage &thisImage, int delta);
-     void filterImageFive(QImage &thisImage, double kernel[5][5], int kernelSize, int sumKernel);
-     void filterImageThree(QImage &thisImage, double kernel[3][3], int kernelSize, int sumKernel);
-     void changeContrast(QImage &thisImage, double delta);
-
      // Private data members.
      //QLabel to store the image itself.
      // QScrollArea to create the scrollable area.
      QLabel *imageLabel;
      QScrollArea *scrollArea;
+
+     //toolbar area.
      QToolBar *imToolbar;
 
      double scaleFactor;
@@ -145,19 +141,23 @@
      QAction *printAct;
      QAction *saveAsAct;
      QAction *exitAct;
+
      // View menu
      QAction *zoomInAct;
      QAction *zoomOutAct;
 
      QAction *normalSizeAct;
      QAction *fitToWindowAct;
+
      // Edit menu
      QAction *invertImageAct;
      QAction *greyscaleAct;
      QAction *sepiaAct;
+     QAction *edgeDetectAct;
 
      QAction *rotateClockAct;
      QAction *rotateCounterClockAct;
+
      // Enhance Menu
      QAction *increaseBrightnessAct;
      QAction *decreaseBrightnessAct;
@@ -172,6 +172,7 @@
      QAction *decreaseContrastAct;
 
      QAction *equalizeHistogramAct;
+
      // Help menu
      QAction *aboutAct;
      QAction *aboutQtAct;

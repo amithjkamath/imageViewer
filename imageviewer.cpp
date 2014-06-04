@@ -42,6 +42,7 @@
  #include <QtAlgorithms>
 
  #include "imageviewer.h"
+ #include "imagealgorithms.h"
 
  //Constructor for the ImageViewer Class.
  ImageViewer::ImageViewer()
@@ -134,6 +135,12 @@
      sepiaAct->setEnabled(false);
      connect(sepiaAct, SIGNAL(triggered()), this, SLOT(sepia()));
 
+     edgeDetectAct = new QAction(tr("&Edge Detect"), this);
+     edgeDetectAct->setShortcut(tr("Ctrl+?"));
+     edgeDetectAct->setEnabled(false);
+     connect(edgeDetectAct, SIGNAL(triggered()), this, SLOT(edgeDetect()));
+
+
      rotateClockAct = new QAction(tr("&Rotate Clockwise"), this);
      rotateClockAct->setShortcut(tr("Ctrl+M"));
      rotateClockAct->setEnabled(false);
@@ -220,6 +227,7 @@
      editMenu->addAction(invertImageAct);
      editMenu->addAction(greyscaleAct);
      editMenu->addAction(sepiaAct);
+     editMenu->addAction(edgeDetectAct);
      editMenu->addSeparator();
      editMenu->addAction(rotateClockAct);
      editMenu->addAction(rotateCounterClockAct);
@@ -320,6 +328,7 @@
          invertImageAct->setEnabled(true);
          greyscaleAct->setEnabled(true);
          sepiaAct->setEnabled(true);
+         edgeDetectAct->setEnabled(true);
 
          rotateClockAct->setEnabled(true);
          rotateCounterClockAct->setEnabled(true);
@@ -444,7 +453,7 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-     thisImage.invertPixels();
+     ImageAlgorithms::invertImage(thisImage);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -453,46 +462,25 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-     QColor oldColor;
-
-     for(int x = 0; x < thisImage.width(); x++)
-     {
-         for(int y = 0; y < thisImage.height(); y++)
-         {
-             oldColor = QColor(thisImage.pixel(x,y));
-             int average = (oldColor.red()+oldColor.green()+oldColor.blue())/3;
-             thisImage.setPixel(x,y,qRgb(average,average,average));
-         }
-     }
-
+     ImageAlgorithms::greyscale(thisImage);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
 
  void ImageViewer::sepia()
  {
-     QColor oldColor;
-     int r, g, b;
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
+     ImageAlgorithms::sepia(thisImage);
+     QPixmap mypixmap = QPixmap::fromImage(thisImage);
+     imageLabel->setPixmap(mypixmap);
+ }
 
-     for(int x = 0; x < thisImage.width(); x++)
-         {
-             for(int y = 0; y < thisImage.height(); y++)
-             {
-                 oldColor = QColor(thisImage.pixel(x,y));
-                 r = ((int)((oldColor.red()*0.393) + (oldColor.green()*0.769) + (oldColor.blue()*0.189)));
-                 g = ((int)(oldColor.red()*0.349) + (oldColor.green()*0.686) + (oldColor.blue()*0.168));
-                 b = ((int)(oldColor.red()*0.272) + (oldColor.green()*0.534) + (oldColor.blue()*0.131));
-
-                 //we check if the new values are between 0 and 255
-                 r = qBound(0, r, 255);
-                 g = qBound(0, g, 255);
-                 b = qBound(0, b, 255);
-
-                 thisImage.setPixel(x,y, qRgb(r,g,b));
-             }
-         }
+ void ImageViewer::edgeDetect()
+ {
+     Q_ASSERT(imageLabel->pixmap());
+     QImage thisImage = imageLabel->pixmap()->toImage();
+     ImageAlgorithms::edgeDetect(thisImage);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -501,11 +489,7 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-
-     QTransform rotateby90;
-     rotateby90.rotate(90);
-     thisImage = thisImage.transformed(rotateby90);
-
+     ImageAlgorithms::rotateImage(thisImage, 90);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -514,11 +498,7 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-
-     QTransform rotatebyneg90;
-     rotatebyneg90.rotate(-90);
-     thisImage = thisImage.transformed(rotatebyneg90);
-
+     ImageAlgorithms::rotateImage(thisImage, -90);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -529,7 +509,7 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-     changeBrightness(thisImage, 5);
+     ImageAlgorithms::changeBrightness(thisImage, 5);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -538,37 +518,9 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-     changeBrightness(thisImage, -5);
+     ImageAlgorithms::changeBrightness(thisImage, -5);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
- }
-
- // Helper for changing brightness.
- void ImageViewer::changeBrightness(QImage& thisImage, int delta)
- {
-     thisImage.convertToFormat(QImage::Format_ARGB32);
-     QColor oldColor;
-         int r,g,b;
-         for(int x=0; x<thisImage.width(); x++)
-         {
-             for(int y=0; y<thisImage.height(); y++)
-             {
-                 oldColor = QColor(thisImage.pixel(x,y));
-
-                 r = oldColor.red() + delta;
-                 g = oldColor.green() + delta;
-                 b = oldColor.blue() + delta;
-
-                 //we check if the new values are between 0 and 255
-                 r = qBound(0, r, 255);
-                 g = qBound(0, g, 255);
-                 b = qBound(0, b, 255);
-
-                 thisImage.setPixel(x,y, qRgb(r,g,b));
-             }
-         }
-         QPixmap mypixmap = QPixmap::fromImage(thisImage);
-         imageLabel->setPixmap(mypixmap);
  }
 
  void ImageViewer::sharpen()
@@ -587,7 +539,7 @@
      */
      int kernelSize = 3;
      int sumKernel = 1;
-     filterImageThree(thisImage,kernel,kernelSize,sumKernel);
+     ImageAlgorithms::filterImageThree(thisImage,kernel,kernelSize,sumKernel);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -603,93 +555,16 @@
                          {0,0,1,0,0}};
      int kernelSize = 5;
      int sumKernel = 27;
-     filterImageFive(thisImage,kernel,kernelSize,sumKernel);
+     ImageAlgorithms::filterImageFive(thisImage,kernel,kernelSize,sumKernel);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
- }
-
- // Helper for filtering an image with a 5 x 5 kernel
- void ImageViewer::filterImageFive(QImage &thisImage, double kernel[][5], int kernelSize, int sumKernel)
- {
-     double r,g,b;
-     QColor color;
-
-     for(int x = kernelSize/2; x < thisImage.width()-(kernelSize/2); x++)
-     {
-         for(int y = kernelSize/2; y < thisImage.height()-(kernelSize/2); y++)
-         {
-             r = 0;
-             g = 0;
-             b = 0;
-
-             for(int i = -kernelSize/2; i <= kernelSize/2; i++){
-                 for(int j = -kernelSize/2; j <= kernelSize/2; j++){
-                     color = QColor(thisImage.pixel(x+i, y+j));
-                     r += (double)color.red()*kernel[kernelSize/2+i][kernelSize/2+j];
-                     g += (double)color.green()*kernel[kernelSize/2+i][kernelSize/2+j];
-                     b += (double)color.blue()*kernel[kernelSize/2+i][kernelSize/2+j];
-                 }
-             }
-             if(sumKernel)
-             {
-                 r = qBound(0, (int)r/sumKernel, 255);
-                 g = qBound(0, (int)g/sumKernel, 255);
-                 b = qBound(0, (int)b/sumKernel, 255);
-             }
-             else
-             {
-                 r = qBound(0, (int)r, 255);
-                 g = qBound(0, (int)g, 255);
-                 b = qBound(0, (int)b, 255);
-             }
-             thisImage.setPixel(x,y,qRgb(r,g,b));
-         }
-     }
- }
-
- void ImageViewer::filterImageThree(QImage &thisImage, double kernel[][3], int kernelSize, int sumKernel)
- {
-     double r,g,b;
-     QColor color;
-
-     for(int x = kernelSize/2; x < thisImage.width()-(kernelSize/2); x++)
-     {
-         for(int y = kernelSize/2; y < thisImage.height()-(kernelSize/2); y++)
-         {
-             r = 0;
-             g = 0;
-             b = 0;
-
-             for(int i = -kernelSize/2; i <= kernelSize/2; i++){
-                 for(int j = -kernelSize/2; j <= kernelSize/2; j++){
-                     color = QColor(thisImage.pixel(x+i, y+j));
-                     r += (double)color.red()*kernel[kernelSize/2+i][kernelSize/2+j];
-                     g += (double)color.green()*kernel[kernelSize/2+i][kernelSize/2+j];
-                     b += (double)color.blue()*kernel[kernelSize/2+i][kernelSize/2+j];
-                 }
-             }
-             if(sumKernel)
-             {
-                 r = qBound(0, (int)r/sumKernel, 255);
-                 g = qBound(0, (int)g/sumKernel, 255);
-                 b = qBound(0, (int)b/sumKernel, 255);
-             }
-             else
-             {
-                 r = qBound(0, (int)r, 255);
-                 g = qBound(0, (int)g, 255);
-                 b = qBound(0, (int)b, 255);
-             }
-             thisImage.setPixel(x,y,qRgb(r,g,b));
-         }
-     }
  }
 
  void ImageViewer::incSaturation()
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-     changeSaturation(thisImage, 5);
+     ImageAlgorithms::changeSaturation(thisImage, 5);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
@@ -698,44 +573,16 @@
  {
      Q_ASSERT(imageLabel->pixmap());
      QImage thisImage = imageLabel->pixmap()->toImage();
-     changeSaturation(thisImage, -5);
+     ImageAlgorithms::changeSaturation(thisImage, -5);
      QPixmap mypixmap = QPixmap::fromImage(thisImage);
      imageLabel->setPixmap(mypixmap);
  }
-
- // Helper for changing the Saturation of the image.
-void ImageViewer::changeSaturation(QImage &thisImage, int delta)
-{
-    QColor oldColor;
-    QColor newColor;
-    int h,s,l;
-
-    for(int x=0; x < thisImage.width(); x++)
-    {
-        for(int y=0; y < thisImage.height(); y++)
-        {
-            oldColor = QColor(thisImage.pixel(x,y));
-
-            newColor = oldColor.toHsl();
-            h = newColor.hue();
-            s = newColor.saturation()+delta;
-            l = newColor.lightness();
-
-            //we check if the new value is between 0 and 255
-            s = qBound(0, s, 255);
-
-            newColor.setHsl(h, s, l);
-
-            thisImage.setPixel(x, y, qRgb(newColor.red(), newColor.green(), newColor.blue()));
-        }
-    }
-}
 
 void ImageViewer::incContrast()
 {
     Q_ASSERT(imageLabel->pixmap());
     QImage thisImage = imageLabel->pixmap()->toImage();
-    changeContrast(thisImage, 1.2);
+    ImageAlgorithms::changeContrast(thisImage, 1.2);
     QPixmap mypixmap = QPixmap::fromImage(thisImage);
     imageLabel->setPixmap(mypixmap);
 }
@@ -744,7 +591,7 @@ void ImageViewer::decContrast()
 {
     Q_ASSERT(imageLabel->pixmap());
     QImage thisImage = imageLabel->pixmap()->toImage();
-    changeContrast(thisImage, 0.5);
+    ImageAlgorithms::changeContrast(thisImage, 0.5);
     QPixmap mypixmap = QPixmap::fromImage(thisImage);
     imageLabel->setPixmap(mypixmap);
 }
@@ -753,70 +600,9 @@ void ImageViewer::equalizeHistogram()
 {
     Q_ASSERT(imageLabel->pixmap());
     QImage thisImage = imageLabel->pixmap()->toImage();
-    changeContrast(thisImage, 1);
+    ImageAlgorithms::changeContrast(thisImage, 1);
     QPixmap mypixmap = QPixmap::fromImage(thisImage);
     imageLabel->setPixmap(mypixmap);
-}
-
-void ImageViewer::changeContrast(QImage &thisImage, double delta)
-{
-    QColor oldColor;
-    int grayVal = 0;
-    double factor = 0;
-
-    QVector<int> table(256);
-    for(int idx = 0; idx < 256; idx++)
-        table[idx] = 0;
-
-    //convert to grayscale.
-    for(int x = 0; x < thisImage.width(); x++)
-    {
-        for(int y = 0; y < thisImage.height(); y++)
-        {
-            oldColor = QColor(thisImage.pixel(x,y));
-            grayVal = qGray(oldColor.red(),oldColor.green(),oldColor.blue());
-            if(grayVal < 0)
-                grayVal = 0;
-            if(grayVal > 255)
-                grayVal = 255;
-            table[grayVal] = table[grayVal]+1;
-        }
-    }
-
-    int minVal = 0;
-    int maxVal = 255;
-    int id = 0;
-    while(table[id]==0)
-        id++;
-    minVal = id;
-    id = maxVal;
-    while(table[id]==0)
-        id--;
-    maxVal = id;
-
-    if(maxVal != minVal)
-    {
-        double r,g,b;
-        // do the linear scaling for contrast adjustment.
-        for(int w=0; w < thisImage.width(); w++)
-        {
-            for(int h=0; h < thisImage.height(); h++)
-            {
-                oldColor = QColor(thisImage.pixel(w,h));
-                grayVal = qGray(oldColor.red(),oldColor.green(),oldColor.blue());
-                factor = (grayVal - minVal)*((double)(255 - 0)/(maxVal - minVal)) + 0;
-                factor = (factor*delta)/grayVal;
-                oldColor = QColor(thisImage.pixel(w,h));
-                r = oldColor.red()*factor;
-                g = oldColor.green()*factor;
-                b = oldColor.blue()*factor;
-                r = qBound(0, (int)r, 255);
-                g = qBound(0, (int)g, 255);
-                b = qBound(0, (int)b, 255);
-                thisImage.setPixel(w, h, qRgb((int)r, (int)g, (int)b));
-            }
-        }
-    }
 }
 
  // Actions in the Help menu.
